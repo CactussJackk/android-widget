@@ -13,13 +13,18 @@ import android.view.View
 import android.widget.RemoteViews
 
 object WidgetRenderer {
-    /** Widgets at least this tall (dp) use the large layout, with bigger numbers and logos. */
-    private const val LARGE_MIN_HEIGHT_DP = 200f
+    /**
+     * Minimum widget height (dp) for each layout. Each threshold sits above the height its
+     * layout actually needs, because launchers report sizes that include their own padding.
+     */
+    private const val MEDIUM_MIN_HEIGHT_DP = 205f
+    private const val LARGE_MIN_HEIGHT_DP = 295f
     private const val MIN_WIDTH_DP = 180f
 
-    private enum class Size(val layout: Int, val cardLayout: Int) {
-        COMPACT(R.layout.widget_summary, R.layout.widget_card_item),
-        LARGE(R.layout.widget_summary_large, R.layout.widget_card_item_large),
+    private enum class Size(val layout: Int, val cardLayout: Int, val minHeightDp: Float) {
+        COMPACT(R.layout.widget_summary, R.layout.widget_card_item, 0f),
+        MEDIUM(R.layout.widget_summary_medium, R.layout.widget_card_item_medium, MEDIUM_MIN_HEIGHT_DP),
+        LARGE(R.layout.widget_summary_large, R.layout.widget_card_item_large, LARGE_MIN_HEIGHT_DP),
     }
 
     fun updateAll(context: Context, status: String? = null) {
@@ -33,19 +38,17 @@ object WidgetRenderer {
     }
 
     private fun build(context: Context, options: Bundle?, statusOverride: String?): RemoteViews {
-        val compact = fill(context, Size.COMPACT, statusOverride)
-        val large = fill(context, Size.LARGE, statusOverride)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             // The launcher picks the layout for the widget's current size, also while resizing.
             return RemoteViews(
-                mapOf(
-                    SizeF(MIN_WIDTH_DP, 0f) to compact,
-                    SizeF(MIN_WIDTH_DP, LARGE_MIN_HEIGHT_DP) to large,
-                ),
+                Size.entries.associate { size ->
+                    SizeF(MIN_WIDTH_DP, size.minHeightDp) to fill(context, size, statusOverride)
+                },
             )
         }
         val height = options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT) ?: 0
-        return if (height >= LARGE_MIN_HEIGHT_DP) large else compact
+        val size = Size.entries.last { height >= it.minHeightDp }
+        return fill(context, size, statusOverride)
     }
 
     private fun fill(context: Context, size: Size, statusOverride: String?): RemoteViews {
