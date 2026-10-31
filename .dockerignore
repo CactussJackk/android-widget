@@ -13,3 +13,6 @@
 **/*.tsbuildinfo
 coverage
 *.log
+
+# Android widget app is built separately
+android

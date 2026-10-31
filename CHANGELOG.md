@@ -12,6 +12,7 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 - Tokens de aparelho têm escopo: `inbox` para o Companion (padrão, inclusive para tokens existentes) e `widget`, somente leitura, para widgets de tela inicial. Tokens usados fora do escopo recebem `403`.
 - `GET /api/widget/summary` devolve despesas, receitas, balanço, saldo previsto e saldo das contas do mês corrente para tokens com escopo `widget`. Detalhes em `docs/widget-api.md`.
 - Ajustes → Integrações ganha a seção "Widgets da tela inicial", para criar, renovar e revogar tokens de widget. O QR Code usa `openmonetis://widget/token?v=1&token=…&url=…` e leva o endereço público do site junto com o token.
+- App Android `android/` com widget de tela inicial (gasto do mês, saldo previsto e saldo das contas), pareado pelo QR Code de widget e atualizado a cada 30 minutos. O APK é publicado como pre-release `widget-apk-N` pelo workflow `Android widget`.
 - Atualização: a migration `0021_device_token_scope` adiciona a coluna `scope` a `device_tokens` com `inbox` como padrão; não há novas variáveis de ambiente nem mudanças no Compose.
 
 ## [0.13.1] - 2026-10-30

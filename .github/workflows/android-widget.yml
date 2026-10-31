@@ -1,0 +1,69 @@
+name: Android widget
+
+on:
+  push:
+    branches:
+      - feature/widget
+    paths:
+      - "android/**"
+      - ".github/workflows/android-widget.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-widget-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    name: Build and publish APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build release APK
+        working-directory: android
+        run: |
+          set -o pipefail
+          if ! ./gradlew --no-daemon assembleRelease 2>&1 | tee build.log; then
+            # Surface compiler errors as annotations, readable without downloading logs.
+            grep -E '^e: |error:|What went wrong' -A2 build.log | head -40 | while IFS= read -r line; do
+              echo "::error title=Gradle::${line}"
+            done
+            exit 1
+          fi
+
+      - name: Name APK
+        run: cp android/app/build/outputs/apk/release/app-release.apk "openmonetis-widget-${{ github.run_number }}.apk"
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openmonetis-widget-${{ github.run_number }}
+          path: openmonetis-widget-${{ github.run_number }}.apk
+
+      - name: Publish pre-release with the APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: widget-apk-${{ github.run_number }}
+          name: Widget Android ${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          files: openmonetis-widget-${{ github.run_number }}.apk
+          body: |
+            APK do widget de tela inicial do OpenMonetis (build ${{ github.run_number }}, commit ${{ github.sha }}).
+
+            Baixe o arquivo `.apk` abaixo pelo celular e instale. Builds novos instalam por cima do anterior.
