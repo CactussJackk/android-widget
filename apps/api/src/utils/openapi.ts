@@ -33,5 +33,21 @@ export const companionValidationHook: Hook<
   unknown
 > = (result, context) => {
   if (result.success) return;
+  // Server-side diagnostics only: field paths and issue codes, never the notification content.
+  console.warn(
+    "Companion payload rejected",
+    JSON.stringify({
+      path: context.req.path,
+      issues: describeValidationIssues(result.error),
+    }),
+  );
   return context.json({ error: "Revise os dados enviados" }, 400);
 };
+
+function describeValidationIssues(error: unknown) {
+  if (!(error instanceof z.ZodError)) return [];
+  return error.issues.slice(0, 20).map((issue) => ({
+    path: issue.path.map(String).join("."),
+    code: issue.code,
+  }));
+}
