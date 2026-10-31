@@ -58,5 +58,6 @@ jobs:
             ghcr.io/${{ env.OWNER }}/openmonetis-${{ matrix.target }}:widget-${{ github.sha }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-          cache-from: type=gha,scope=fork-${{ matrix.target }}
-          cache-to: type=gha,mode=max,scope=fork-${{ matrix.target }}
+          # No layer cache: the Dockerfile installs offline from a BuildKit cache mount, which is
+          # not persisted between runners. A cached install layer would leave that store empty.
+          no-cache: true
