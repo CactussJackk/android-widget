@@ -11,7 +11,7 @@ object SummaryRefresher {
             WidgetRenderer.updateAll(context)
             return null
         }
-        val result = SummaryClient.fetch(connection)
+        val result = SummaryClient.fetch(connection, settings.showNextMonth)
         settings.record(result, System.currentTimeMillis())
         WidgetRenderer.updateAll(context)
         return result

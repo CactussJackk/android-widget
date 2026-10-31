@@ -35,7 +35,10 @@ e o token. Como no Companion, o payload é uma credencial secreta e não deve se
 
 ## `GET /api/widget/summary`
 
-Exige `Authorization: Bearer <token-widget>`. Responde sem envelope, com `Cache-Control: private,
+Exige `Authorization: Bearer <token-widget>`. O parâmetro opcional `month` escolhe o mês exibido:
+`current` (padrão) ou `next`, o mês seguinte, onde fica a fatura do cartão em aberto para quem paga no
+mês seguinte o que gasta no mês atual. Outros valores retornam HTTP `400` com
+`{ "error": "Parâmetro inválido" }`. Responde sem envelope, com `Cache-Control: private,
 no-store`, e aceita até 30 requisições por minuto por token.
 
 ```json
@@ -52,10 +55,10 @@ no-store`, e aceita até 30 requisições por minuto por token.
 
 | Campo | Significado |
 | --- | --- |
-| `period` | Mês corrente no horário de Brasília |
+| `period` | Mês exibido, calculado a partir do mês corrente no horário de Brasília |
 | `expenses` / `income` | Despesas e receitas do mês, no mesmo critério da Visão Geral |
 | `balance` | Receitas menos despesas do mês |
 | `projectedBalance` | Saldo previsto ao fim do mês |
-| `accountsBalance` | Saldo atual das contas incluídas no saldo consolidado |
+| `accountsBalance` | Saldo atual das contas incluídas no saldo consolidado, sempre do mês corrente |
 
 Os valores vêm dos mesmos cálculos do dashboard e consideram a pessoa administradora.

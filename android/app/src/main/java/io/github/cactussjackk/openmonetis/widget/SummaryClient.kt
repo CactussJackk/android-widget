@@ -14,9 +14,10 @@ sealed interface FetchResult {
 object SummaryClient {
     private const val TIMEOUT_MS = 15_000
 
-    fun fetch(connection: Connection): FetchResult {
+    fun fetch(connection: Connection, nextMonth: Boolean): FetchResult {
+        val month = if (nextMonth) "next" else "current"
         val http = try {
-            URL("${connection.serverUrl}/api/widget/summary").openConnection() as HttpURLConnection
+            URL("${connection.serverUrl}/api/widget/summary?month=$month").openConnection() as HttpURLConnection
         } catch (error: IOException) {
             return FetchResult.Failure("Endereço do servidor inválido")
         }
@@ -34,6 +35,7 @@ object SummaryClient {
                 }
                 HttpURLConnection.HTTP_UNAUTHORIZED, HttpURLConnection.HTTP_FORBIDDEN -> FetchResult.Unauthorized
                 HttpURLConnection.HTTP_NOT_FOUND -> FetchResult.Failure("Servidor sem suporte a widgets")
+                HttpURLConnection.HTTP_BAD_REQUEST -> FetchResult.Failure("Atualize o OpenMonetis do servidor")
                 429 -> FetchResult.Failure("Muitas atualizações seguidas")
                 else -> FetchResult.Failure("Servidor respondeu $status")
             }

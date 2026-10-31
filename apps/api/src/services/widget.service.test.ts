@@ -47,3 +47,40 @@ test("widget summary uses the current Brazilian month and the dashboard figures"
   });
   assert.deepEqual(periods, ["2026-10", "2026-10"]);
 });
+
+test("next-month widget summary shows the open invoice month and the current account balance", async () => {
+  const requested: string[] = [];
+  const service = createWidgetService(
+    {
+      getMetrics: async (period) => {
+        requested.push(`metrics:${period}`);
+        return {
+          period,
+          previousPeriod: "2026-11",
+          income: metric(0),
+          expenses: metric(2500),
+          balance: metric(-2500),
+          projected: metric(900),
+          history: [],
+        };
+      },
+      getAccounts: async (period) => {
+        requested.push(`accounts:${period}`);
+        return {
+          period,
+          scope: { accountingBasis: "cash", includePending: false, personScope: "primary" },
+          totalBalance: 3400,
+          items: [],
+        };
+      },
+    },
+    { now: () => new Date("2026-12-31T12:00:00.000Z") },
+  );
+
+  const summary = await service.getSummary(userId, "next");
+  assert.equal(summary.period, "2027-01");
+  assert.equal(summary.expenses, 2500);
+  assert.equal(summary.projectedBalance, 900);
+  assert.equal(summary.accountsBalance, 3400);
+  assert.deepEqual(requested.sort(), ["accounts:2026-12", "metrics:2027-01"]);
+});

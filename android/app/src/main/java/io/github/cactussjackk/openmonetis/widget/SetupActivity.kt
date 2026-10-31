@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import com.google.mlkit.vision.barcode.common.Barcode
@@ -35,6 +36,13 @@ class SetupActivity : Activity() {
         refreshButton = findViewById(R.id.setup_refresh)
         openButton = findViewById(R.id.setup_open)
         disconnectButton = findViewById(R.id.setup_disconnect)
+        val nextMonthSwitch = findViewById<Switch>(R.id.setup_next_month)
+        nextMonthSwitch.isChecked = settings.showNextMonth
+        nextMonthSwitch.setOnCheckedChangeListener { _, checked ->
+            settings.showNextMonth = checked
+            WidgetRenderer.updateAll(this)
+            refresh()
+        }
 
         findViewById<Button>(R.id.setup_scan).setOnClickListener { scan() }
         findViewById<Button>(R.id.setup_save).setOnClickListener {

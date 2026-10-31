@@ -62,11 +62,25 @@
             android:layout_height="wrap_content"
             android:text="@string/setup_save" />
 
+        <Switch
+            android:id="@+id/setup_next_month"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="@string/setup_next_month"
+            android:textAppearance="@android:style/TextAppearance.Material.Body1" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/setup_next_month_help"
+            android:textAppearance="@android:style/TextAppearance.Material.Caption" />
+
         <Button
             android:id="@+id/setup_refresh"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="16dp"
             android:text="@string/setup_refresh" />
 
         <Button

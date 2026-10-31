@@ -36,6 +36,13 @@ class WidgetSettings(context: Context) {
     val isUnauthorized: Boolean
         get() = prefs.getBoolean(KEY_UNAUTHORIZED, false)
 
+    /** Shows next month, where this month's card purchases are billed. */
+    var showNextMonth: Boolean
+        get() = prefs.getBoolean(KEY_NEXT_MONTH, true)
+        set(value) {
+            prefs.edit().putBoolean(KEY_NEXT_MONTH, value).remove(KEY_SUMMARY).apply()
+        }
+
     fun save(connection: Connection) {
         prefs.edit()
             .putString(KEY_URL, connection.serverUrl)
@@ -48,7 +55,8 @@ class WidgetSettings(context: Context) {
     }
 
     fun clear() {
-        prefs.edit().clear().apply()
+        val nextMonth = showNextMonth
+        prefs.edit().clear().putBoolean(KEY_NEXT_MONTH, nextMonth).apply()
     }
 
     fun record(result: FetchResult, at: Long) {
@@ -74,5 +82,6 @@ class WidgetSettings(context: Context) {
         const val KEY_SUCCESS_AT = "last_success_at"
         const val KEY_ERROR = "last_error"
         const val KEY_UNAUTHORIZED = "unauthorized"
+        const val KEY_NEXT_MONTH = "show_next_month"
     }
 }

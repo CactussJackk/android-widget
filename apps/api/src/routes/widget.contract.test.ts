@@ -39,15 +39,16 @@ function principal(scope: DeviceTokenScope) {
 const authenticate = async (token: string | null) =>
   token === widgetToken ? principal("widget") : token === inboxToken ? principal("inbox") : null;
 
-function createTestApp(requestedUsers: string[] = []) {
+function createTestApp(requestedUsers: string[] = [], requestedMonths: string[] = []) {
   const app = new OpenAPIHono<{ Variables: ApiVariables }>();
   app.onError(errorHandler);
   app.notFound(notFoundHandler);
   app.use("/api/widget/*", createRequireDeviceToken({ authenticate }, { scope: "widget" }));
   app.use("/api/inbox", createRequireDeviceToken({ authenticate }, { scope: "inbox" }));
   const service: WidgetService = {
-    getSummary: async (id) => {
+    getSummary: async (id, month) => {
       requestedUsers.push(id);
+      requestedMonths.push(month ?? "unset");
       return summary;
     },
   };
@@ -100,4 +101,17 @@ test("widget tokens cannot ingest into the Companion inbox", async () => {
     }),
   });
   assert.equal(response.status, 403);
+});
+
+test("widget summary accepts the month to display and rejects unknown values", async () => {
+  const requestedMonths: string[] = [];
+  const app = createTestApp([], requestedMonths);
+  const headers = { Authorization: `Bearer ${widgetToken}` };
+
+  assert.equal((await app.request("/api/widget/summary", { headers })).status, 200);
+  assert.equal((await app.request("/api/widget/summary?month=next", { headers })).status, 200);
+  const invalid = await app.request("/api/widget/summary?month=last", { headers });
+  assert.equal(invalid.status, 400);
+  assert.deepEqual(await invalid.json(), { error: "Parâmetro inválido" });
+  assert.deepEqual(requestedMonths, ["current", "next"]);
 });

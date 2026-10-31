@@ -8,6 +8,8 @@
     <string name="setup_url_hint">https://seu-servidor.ts.net:7443</string>
     <string name="setup_token_hint">Token do widget (opm_…)</string>
     <string name="setup_save">Salvar conexão</string>
+    <string name="setup_next_month">Mostrar o próximo mês</string>
+    <string name="setup_next_month_help">Ligado, o widget mostra o mês em que você paga o que está gastando agora: em outubro, mostra novembro, com a fatura do cartão em aberto. O saldo nas contas é sempre o de hoje.</string>
     <string name="setup_refresh">Atualizar agora</string>
     <string name="setup_open">Abrir OpenMonetis</string>
     <string name="setup_disconnect">Desconectar</string>
