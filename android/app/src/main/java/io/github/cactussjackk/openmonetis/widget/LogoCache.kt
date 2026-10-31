@@ -19,8 +19,8 @@ import java.net.URL
  */
 object LogoCache {
     private val logoPath = Regex("^/logos/[A-Za-z0-9._-]+\\.png$")
-    private const val SIZE_PX = 96
-    private const val RADIUS_PX = 22f
+    private const val SIZE_PX = 144
+    private const val RADIUS_PX = 34f
     private const val TIMEOUT_MS = 10_000
 
     fun prefetch(context: Context, serverUrl: String, logos: Collection<String?>) {
@@ -37,7 +37,7 @@ object LogoCache {
     }
 
     private fun file(context: Context, logo: String): File {
-        val directory = File(context.filesDir, "logos").apply { mkdirs() }
+        val directory = File(context.filesDir, "logos-144").apply { mkdirs() }
         return File(directory, logo.substringAfterLast('/'))
     }
 

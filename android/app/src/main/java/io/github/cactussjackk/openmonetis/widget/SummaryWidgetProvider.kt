@@ -4,16 +4,27 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 
 class SummaryWidgetProvider : AppWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, appWidgetIds: IntArray) {
         // Draw from the cache only. Enqueuing one-off work here can make WorkManager trigger
         // another widget update; the periodic job keeps the data fresh instead.
-        manager.updateAppWidget(appWidgetIds, WidgetRenderer.build(context))
+        appWidgetIds.forEach { id -> WidgetRenderer.update(context, manager, id) }
         if (WidgetSettings(context).connection != null) RefreshScheduler.schedulePeriodic(context)
     }
 
-    override fun onEnabled(context: Context) {
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        manager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: Bundle,
+    ) {
+        // Below Android 12 the layout is chosen from the widget size, so redraw after a resize.
+        WidgetRenderer.update(context, manager, appWidgetId)
+    }
+
+        override fun onEnabled(context: Context) {
         if (WidgetSettings(context).connection != null) {
             RefreshScheduler.schedulePeriodic(context)
             RefreshScheduler.refreshNow(context)

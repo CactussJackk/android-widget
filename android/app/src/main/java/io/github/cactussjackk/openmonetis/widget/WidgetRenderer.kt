@@ -6,20 +6,51 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.os.Bundle
+import android.util.SizeF
 import android.view.View
 import android.widget.RemoteViews
 
 object WidgetRenderer {
+    /** Widgets at least this tall (dp) use the large layout, with bigger numbers and logos. */
+    private const val LARGE_MIN_HEIGHT_DP = 200f
+    private const val MIN_WIDTH_DP = 180f
+
+    private enum class Size(val layout: Int, val cardLayout: Int) {
+        COMPACT(R.layout.widget_summary, R.layout.widget_card_item),
+        LARGE(R.layout.widget_summary_large, R.layout.widget_card_item_large),
+    }
+
     fun updateAll(context: Context, status: String? = null) {
         val manager = AppWidgetManager.getInstance(context)
         val ids = manager.getAppWidgetIds(ComponentName(context, SummaryWidgetProvider::class.java))
-        if (ids.isEmpty()) return
-        manager.updateAppWidget(ids, build(context, status))
+        ids.forEach { id -> update(context, manager, id, status) }
     }
 
-    fun build(context: Context, statusOverride: String? = null): RemoteViews {
+    fun update(context: Context, manager: AppWidgetManager, appWidgetId: Int, status: String? = null) {
+        manager.updateAppWidget(appWidgetId, build(context, manager.getAppWidgetOptions(appWidgetId), status))
+    }
+
+    private fun build(context: Context, options: Bundle?, statusOverride: String?): RemoteViews {
+        val compact = fill(context, Size.COMPACT, statusOverride)
+        val large = fill(context, Size.LARGE, statusOverride)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // The launcher picks the layout for the widget's current size, also while resizing.
+            return RemoteViews(
+                mapOf(
+                    SizeF(MIN_WIDTH_DP, 0f) to compact,
+                    SizeF(MIN_WIDTH_DP, LARGE_MIN_HEIGHT_DP) to large,
+                ),
+            )
+        }
+        val height = options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT) ?: 0
+        return if (height >= LARGE_MIN_HEIGHT_DP) large else compact
+    }
+
+    private fun fill(context: Context, size: Size, statusOverride: String?): RemoteViews {
         val settings = WidgetSettings(context)
-        val views = RemoteViews(context.packageName, R.layout.widget_summary)
+        val views = RemoteViews(context.packageName, size.layout)
         val connection = settings.connection
         val summary = settings.summary
 
@@ -29,7 +60,7 @@ object WidgetRenderer {
         setAmount(context, views, R.id.widget_balance, summary?.balance)
         setAmount(context, views, R.id.widget_accounts, summary?.accountsBalance)
         views.setTextViewText(R.id.widget_status, statusOverride ?: status(settings, connection, summary))
-        renderCards(context, views, connection, summary)
+        renderCards(context, views, size, connection, summary)
 
         views.setOnClickPendingIntent(R.id.widget_root, openIntent(context, connection, null))
         views.setOnClickPendingIntent(R.id.widget_refresh, refreshIntent(context))
@@ -39,6 +70,7 @@ object WidgetRenderer {
     private fun renderCards(
         context: Context,
         views: RemoteViews,
+        size: Size,
         connection: Connection?,
         summary: Summary?,
     ) {
@@ -49,7 +81,7 @@ object WidgetRenderer {
             if (summary != null && cards.isEmpty()) View.VISIBLE else View.GONE,
         )
         cards.forEachIndexed { index, card ->
-            val item = RemoteViews(context.packageName, R.layout.widget_card_item)
+            val item = RemoteViews(context.packageName, size.cardLayout)
             val logo = LogoCache.load(context, card.logo)
             if (logo != null) {
                 item.setImageViewBitmap(R.id.card_logo, logo)
