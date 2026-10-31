@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">OpenMonetis Widget</string>
-    <string name="widget_description">Gasto do mês e saldo previsto do seu OpenMonetis</string>
+    <string name="widget_description">Gasto, resultado do mês e faturas dos cartões do seu OpenMonetis</string>
     <string name="setup_title">Widget do OpenMonetis</string>
     <string name="setup_scan">Escanear QR Code</string>
     <string name="setup_manual">Ou preencha manualmente</string>
@@ -14,7 +14,8 @@
     <string name="setup_open">Abrir OpenMonetis</string>
     <string name="setup_disconnect">Desconectar</string>
     <string name="setup_help">No OpenMonetis, abra Ajustes → Integrações → Widgets da tela inicial e toque em Conectar widget. Depois de conectar aqui, toque e segure um espaço vazio da tela inicial, escolha Widgets e arraste o OpenMonetis Widget. O Tailscale precisa estar ligado para o widget atualizar.</string>
-    <string name="widget_label_projected">Previsto no fim do mês</string>
+    <string name="widget_label_balance">Resultado do mês</string>
+    <string name="widget_cards_empty">Nenhuma fatura de cartão neste mês</string>
     <string name="widget_label_accounts">Saldo nas contas</string>
     <string name="widget_refresh">Atualizar</string>
 </resources>

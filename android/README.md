@@ -1,6 +1,7 @@
 # OpenMonetis Widget (Android)
 
-Widget de tela inicial que mostra o gasto do mês, o saldo previsto e o saldo das contas a partir de
+Widget de tela inicial que mostra o gasto do mês, o resultado do mês, o saldo das contas e a fatura
+de cada cartão (logo, nome e valor, lado a lado) a partir de
 `GET /api/widget/summary` (veja `docs/widget-api.md`).
 
 ## Instalação

@@ -20,6 +20,7 @@ const summary = {
   balance: 3765.44,
   projectedBalance: 2100.1,
   accountsBalance: 4321.09,
+  cards: [],
   generatedAt: "2026-10-31T12:00:00.000Z",
 };
 

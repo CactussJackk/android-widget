@@ -49,6 +49,16 @@ no-store`, e aceita até 30 requisições por minuto por token.
   "balance": 3765.44,
   "projectedBalance": 2100.1,
   "accountsBalance": 4321.09,
+  "cards": [
+    {
+      "cardId": "8f0c…",
+      "name": "Nubank",
+      "logo": "/logos/nubank.png",
+      "amount": 800,
+      "remainingAmount": 800,
+      "paid": false
+    }
+  ],
   "generatedAt": "2026-10-31T12:00:00.000Z"
 }
 ```
@@ -59,6 +69,7 @@ no-store`, e aceita até 30 requisições por minuto por token.
 | `expenses` / `income` | Despesas e receitas do mês, no mesmo critério da Visão Geral |
 | `balance` | Receitas menos despesas do mês |
 | `projectedBalance` | Saldo previsto ao fim do mês |
+| `cards` | Faturas com valor no mês exibido: cartão, logo (caminho no site), total, restante e se está paga |
 | `accountsBalance` | Saldo atual das contas incluídas no saldo consolidado, sempre do mês corrente |
 
 Os valores vêm dos mesmos cálculos do dashboard e consideram a pessoa administradora.

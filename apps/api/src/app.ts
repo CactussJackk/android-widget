@@ -311,7 +311,7 @@ const dashboardService = createDashboardService(dashboardRepository, accountsSer
   invoices: invoicesService,
 });
 const dashboardRoute = createDashboardRoute(dashboardService);
-const widgetRoute = createWidgetRoute(createWidgetService(dashboardService));
+const widgetRoute = createWidgetRoute(createWidgetService(dashboardService, invoicesService));
 const inboxRulesRoute = createInboxRulesRoute(createInboxRulesService(inboxRulesRepository));
 const companionInboxRoute = createCompanionInboxRoute(inboxService);
 const notificationsRoute = createNotificationsRoute(

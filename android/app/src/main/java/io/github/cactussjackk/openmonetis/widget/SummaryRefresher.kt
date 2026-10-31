@@ -12,6 +12,9 @@ object SummaryRefresher {
             return null
         }
         val result = SummaryClient.fetch(connection, settings.showNextMonth)
+        if (result is FetchResult.Success) {
+            LogoCache.prefetch(context, connection.serverUrl, result.summary.cards.map { it.logo })
+        }
         settings.record(result, System.currentTimeMillis())
         WidgetRenderer.updateAll(context)
         return result

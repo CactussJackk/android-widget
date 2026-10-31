@@ -17,6 +17,19 @@ export const WidgetSummaryQuerySchema = z
   })
   .openapi("WidgetSummaryQuery");
 
+export const WidgetCardInvoiceOutputSchema = z
+  .object({
+    cardId: z.uuid(),
+    name: z.string(),
+    logo: z.string().nullable().openapi({
+      description: "Caminho do logo servido pelo site, por exemplo `/logos/nubank.png`",
+    }),
+    amount: z.number().finite().nonnegative().openapi({ description: "Total da fatura do mês" }),
+    remainingAmount: z.number().finite().nonnegative(),
+    paid: z.boolean(),
+  })
+  .openapi("WidgetCardInvoice");
+
 export const WidgetSummaryOutputSchema = z
   .object({
     period: periodSchema.openapi({ example: "2026-11", description: "Mês exibido" }),
@@ -32,9 +45,13 @@ export const WidgetSummaryOutputSchema = z
       description:
         "Saldo atual somado das contas que entram no saldo consolidado, sempre do mês corrente",
     }),
+    cards: z.array(WidgetCardInvoiceOutputSchema).openapi({
+      description: "Faturas com valor no mês exibido, uma por cartão",
+    }),
     generatedAt: z.iso.datetime(),
   })
   .openapi("WidgetSummary");
 
 export type WidgetSummaryQuery = z.infer<typeof WidgetSummaryQuerySchema>;
+export type WidgetCardInvoiceOutput = z.infer<typeof WidgetCardInvoiceOutputSchema>;
 export type WidgetSummaryOutput = z.infer<typeof WidgetSummaryOutputSchema>;

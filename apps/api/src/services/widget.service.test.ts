@@ -1,12 +1,24 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import type { InvoicesService } from "./invoices.service";
 import { createWidgetService } from "./widget.service";
 
 const userId = "00000000-0000-4000-8000-000000000001";
 const metric = (current: number) => ({ current, previous: 0, hasPreviousData: false });
+type InvoicesOutput = Awaited<ReturnType<InvoicesService["get"]>>;
+
+function invoicesReader(periods: string[], items: Partial<InvoicesOutput["items"][number]>[] = []) {
+  return {
+    get: async (period: string) => {
+      periods.push(`invoices:${period}`);
+      return { period, totalRemaining: 0, accounts: [], items } as unknown as InvoicesOutput;
+    },
+  };
+}
 
 test("widget summary uses the current Brazilian month and the dashboard figures", async () => {
   const periods: string[] = [];
+  const invoicePeriods: string[] = [];
   const service = createWidgetService(
     {
       getMetrics: async (period, owner) => {
@@ -32,6 +44,22 @@ test("widget summary uses the current Brazilian month and the dashboard figures"
         };
       },
     },
+    invoicesReader(invoicePeriods, [
+      {
+        cardId: "00000000-0000-4000-8000-000000000101",
+        cardName: "Nubank",
+        logo: "/logos/nubank.png",
+        amount: 800,
+        remainingAmount: 800,
+      },
+      {
+        cardId: "00000000-0000-4000-8000-000000000102",
+        cardName: "Itaú",
+        logo: null,
+        amount: 300,
+        remainingAmount: 0,
+      },
+    ]),
     // 31/10 23:30 em Brasília ainda é outubro, embora já seja 01/11 em UTC.
     { now: () => new Date("2026-11-01T02:30:00.000Z") },
   );
@@ -43,9 +71,28 @@ test("widget summary uses the current Brazilian month and the dashboard figures"
     balance: 3765.44,
     projectedBalance: 2100.1,
     accountsBalance: 4321.09,
+    cards: [
+      {
+        cardId: "00000000-0000-4000-8000-000000000101",
+        name: "Nubank",
+        logo: "/logos/nubank.png",
+        amount: 800,
+        remainingAmount: 800,
+        paid: false,
+      },
+      {
+        cardId: "00000000-0000-4000-8000-000000000102",
+        name: "Itaú",
+        logo: null,
+        amount: 300,
+        remainingAmount: 0,
+        paid: true,
+      },
+    ],
     generatedAt: "2026-11-01T02:30:00.000Z",
   });
   assert.deepEqual(periods, ["2026-10", "2026-10"]);
+  assert.deepEqual(invoicePeriods, ["invoices:2026-10"]);
 });
 
 test("next-month widget summary shows the open invoice month and the current account balance", async () => {
@@ -74,6 +121,7 @@ test("next-month widget summary shows the open invoice month and the current acc
         };
       },
     },
+    invoicesReader(requested),
     { now: () => new Date("2026-12-31T12:00:00.000Z") },
   );
 
@@ -82,5 +130,5 @@ test("next-month widget summary shows the open invoice month and the current acc
   assert.equal(summary.expenses, 2500);
   assert.equal(summary.projectedBalance, 900);
   assert.equal(summary.accountsBalance, 3400);
-  assert.deepEqual(requested.sort(), ["accounts:2026-12", "metrics:2027-01"]);
+  assert.deepEqual(requested.sort(), ["accounts:2026-12", "invoices:2027-01", "metrics:2027-01"]);
 });
