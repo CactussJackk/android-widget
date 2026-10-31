@@ -14,6 +14,27 @@ import {
 const optionalTrimmedString = (maximumLength: number) =>
   z.string().trim().min(1).max(maximumLength).nullish();
 
+/**
+ * Companion notifications are captured from third-party apps, so optional fields are best
+ * effort: a blank title or an over-long merchant name must not reject the whole batch, which
+ * the Companion would retry forever. Blank values become null and long values are truncated.
+ */
+const lenientOptionalString = (maximumLength: number) =>
+  z.preprocess((value) => {
+    if (typeof value !== "string") return value;
+    const trimmed = value.trim();
+    return trimmed === "" ? null : trimmed.slice(0, maximumLength);
+  }, optionalTrimmedString(maximumLength));
+
+/** Parsed amounts are hints; non-positive or out-of-range values are dropped instead of failing. */
+const lenientParsedAmount = z.preprocess(
+  (value) =>
+    typeof value === "number" && (!Number.isFinite(value) || value <= 0 || value > 999_999_999.99)
+      ? null
+      : value,
+  z.number().positive().max(999_999_999.99).nullish(),
+);
+
 export const CompanionInboxItemInputSchema = z
   .object({
     sourceApp: z
@@ -22,13 +43,17 @@ export const CompanionInboxItemInputSchema = z
       .min(1)
       .max(inboxSourceAppMaximumLength)
       .regex(/^[A-Za-z0-9._-]+$/),
-    sourceAppName: optionalTrimmedString(inboxSourceAppNameMaximumLength),
-    originalTitle: optionalTrimmedString(inboxOriginalTitleMaximumLength),
-    originalText: z.string().trim().min(1).max(inboxOriginalTextMaximumLength),
+    sourceAppName: lenientOptionalString(inboxSourceAppNameMaximumLength),
+    originalTitle: lenientOptionalString(inboxOriginalTitleMaximumLength),
+    originalText: z.preprocess(
+      (value) =>
+        typeof value === "string" ? value.trim().slice(0, inboxOriginalTextMaximumLength) : value,
+      z.string().trim().min(1).max(inboxOriginalTextMaximumLength),
+    ),
     notificationTimestamp: z.iso.datetime({ offset: true }),
     timestampFormatVersion: z.literal(2).optional(),
-    parsedName: optionalTrimmedString(inboxParsedNameMaximumLength),
-    parsedAmount: z.number().positive().max(999_999_999.99).nullish(),
+    parsedName: lenientOptionalString(inboxParsedNameMaximumLength),
+    parsedAmount: lenientParsedAmount,
     clientId: optionalTrimmedString(inboxClientIdMaximumLength),
   })
   .strict()

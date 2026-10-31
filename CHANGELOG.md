@@ -7,6 +7,10 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ## [Unreleased]
 
+### Corrigido
+
+- Lotes do Companion não são mais rejeitados por inteiro (HTTP 400, repetido a cada nova tentativa) quando uma notificação traz título, nome do app ou estabelecimento em branco, texto acima de 2.000 caracteres ou valor zerado: campos opcionais em branco viram nulos, textos longos são truncados e valores fora da faixa são descartados.
+
 ### Adicionado
 
 - Tokens de aparelho têm escopo: `inbox` para o Companion (padrão, inclusive para tokens existentes) e `widget`, somente leitura, para widgets de tela inicial. Tokens usados fora do escopo recebem `403`.

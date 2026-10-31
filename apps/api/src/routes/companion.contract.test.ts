@@ -135,3 +135,48 @@ test("Companion internal errors never expose database error codes", async () => 
     console.error = previousConsoleError;
   }
 });
+
+test("Companion batches tolerate blank optional fields, long texts and zero amounts", async () => {
+  const received: unknown[] = [];
+  const app = createTestApp({
+    ...acceptedService,
+    ingestBatch: async (inputs) => {
+      received.push(...inputs);
+      return inputs.map((input) => ({
+        clientId: input.clientId ?? null,
+        serverId: inboxId,
+        success: true,
+        error: null,
+      }));
+    },
+  });
+
+  const response = await app.request("/api/inbox/batch", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${validToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      items: [
+        {
+          sourceApp: "com.nu.production",
+          sourceAppName: "  ",
+          originalTitle: "",
+          originalText: `Compra aprovada ${"x".repeat(2_500)}`,
+          notificationTimestamp: "2026-10-31T12:00:00.000Z",
+          timestampFormatVersion: 2,
+          parsedName: "",
+          parsedAmount: 0,
+          clientId: "notification-blank",
+        },
+      ],
+    }),
+  });
+
+  assert.equal(response.status, 201);
+  assert.equal(received.length, 1);
+  const [item] = received as Record<string, unknown>[];
+  assert.equal(item.sourceAppName, null);
+  assert.equal(item.originalTitle, null);
+  assert.equal(item.parsedName, null);
+  assert.equal(item.parsedAmount, null);
+  assert.equal((item.originalText as string).length, 2_000);
+});
