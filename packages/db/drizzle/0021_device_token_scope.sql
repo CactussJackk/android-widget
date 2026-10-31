@@ -1,0 +1,2 @@
+ALTER TABLE "device_tokens" ADD COLUMN "scope" varchar(16) DEFAULT 'inbox' NOT NULL;--> statement-breakpoint
+ALTER TABLE "device_tokens" ADD CONSTRAINT "device_tokens_scope_check" CHECK ("device_tokens"."scope" in ('inbox', 'widget'));

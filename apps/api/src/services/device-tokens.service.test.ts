@@ -82,6 +82,7 @@ test("device token authentication requires the exact format and touches owned cr
               name: "Android",
               tokenDigest: digest,
               tokenPrefix: rawToken.slice(0, 12),
+              scope: "inbox" as const,
               lastUsedAt: null,
               expiresAt: new Date("2027-01-01T00:00:00.000Z"),
               revokedAt: null,
@@ -107,6 +108,7 @@ const activeRecord = {
   name: "Android",
   tokenDigest: "digest",
   tokenPrefix: "opm_aaaaaaaa",
+  scope: "inbox" as const,
   lastUsedAt: now,
   expiresAt: new Date("2026-08-30T12:00:00.000Z"),
   revokedAt: null,
@@ -172,4 +174,53 @@ test("device token rotation keeps the name and replaces only an owned active tok
     (error: unknown) =>
       error instanceof Error && "code" in error && error.code === "device_token_not_found",
   );
+});
+
+test("device tokens default to the inbox scope and keep their scope on rotation", async () => {
+  const inserted: { scope: string }[] = [];
+  const service = createDeviceTokensService(
+    createRepository({
+      insertIfBelowActiveLimit: async (data) => {
+        inserted.push(data);
+        return {
+          id: "00000000-0000-4000-8000-000000000002",
+          ...data,
+          lastUsedAt: null,
+          revokedAt: null,
+          createdAt: now,
+        };
+      },
+      listActiveForUser: async () => [
+        {
+          id: "00000000-0000-4000-8000-000000000003",
+          userId,
+          name: "Widget",
+          tokenDigest: "a".repeat(64),
+          tokenPrefix: "opm_bbbbbbbb",
+          scope: "widget",
+          lastUsedAt: null,
+          expiresAt: new Date("2027-08-10T12:00:00.000Z"),
+          revokedAt: null,
+          createdAt: now,
+        },
+      ],
+      replaceForUser: async (id, data) => {
+        inserted.push(data);
+        return { id, ...data, lastUsedAt: null, revokedAt: null, createdAt: now };
+      },
+    }),
+    { secret, now: () => now },
+  );
+
+  const companion = await service.create({ name: "Android" }, userId);
+  const widget = await service.create({ name: "Widget", scope: "widget" }, userId);
+  const rotated = await service.rotate("00000000-0000-4000-8000-000000000003", userId);
+
+  assert.deepEqual(
+    inserted.map((data) => data.scope),
+    ["inbox", "widget", "widget"],
+  );
+  assert.equal(companion.scope, "inbox");
+  assert.equal(widget.scope, "widget");
+  assert.equal(rotated.scope, "widget");
 });

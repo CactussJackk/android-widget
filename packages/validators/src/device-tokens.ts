@@ -1,8 +1,15 @@
 import { z } from "@hono/zod-openapi";
-import { deviceTokenNameMaximumLength } from "@openmonetis/domain/device-tokens";
+import {
+  defaultDeviceTokenScope,
+  deviceTokenNameMaximumLength,
+  deviceTokenScopes,
+} from "@openmonetis/domain/device-tokens";
 
 export const CreateDeviceTokenInputSchema = z
-  .object({ name: z.string().trim().min(1).max(deviceTokenNameMaximumLength) })
+  .object({
+    name: z.string().trim().min(1).max(deviceTokenNameMaximumLength),
+    scope: z.enum(deviceTokenScopes).default(defaultDeviceTokenScope),
+  })
   .strict()
   .openapi("CreateDeviceTokenInput");
 
@@ -15,6 +22,7 @@ export const DeviceTokenOutputSchema = z
     id: z.uuid(),
     name: z.string(),
     tokenPrefix: z.string(),
+    scope: z.enum(deviceTokenScopes),
     lastUsedAt: z.iso.datetime().nullable(),
     expiresAt: z.iso.datetime(),
     expiresSoon: z.boolean(),
@@ -40,6 +48,6 @@ export const CompanionDeviceAuthenticationErrorSchema = z
   .object({ valid: z.literal(false), error: z.string() })
   .openapi("CompanionDeviceAuthenticationError");
 
-export type CreateDeviceTokenInput = z.infer<typeof CreateDeviceTokenInputSchema>;
+export type CreateDeviceTokenInput = z.input<typeof CreateDeviceTokenInputSchema>;
 export type DeviceTokenOutput = z.infer<typeof DeviceTokenOutputSchema>;
 export type CreatedDeviceTokenOutput = z.infer<typeof CreatedDeviceTokenOutputSchema>;

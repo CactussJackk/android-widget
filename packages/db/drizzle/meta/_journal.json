@@ -148,6 +148,13 @@
       "when": 1793364807361,
       "tag": "0020_user_start_page",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793419968047,
+      "tag": "0021_device_token_scope",
+      "breakpoints": true
     }
   ]
 }

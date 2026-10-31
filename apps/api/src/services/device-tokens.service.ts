@@ -1,5 +1,7 @@
 import { createHmac, randomBytes } from "node:crypto";
 import {
+  type DeviceTokenScope,
+  defaultDeviceTokenScope,
   deviceTokenMaximumActiveCount,
   deviceTokenPrefix,
   getDeviceTokenActivityStart,
@@ -21,6 +23,7 @@ type DeviceTokenRecord = {
   name: string;
   tokenDigest: string;
   tokenPrefix: string;
+  scope: DeviceTokenScope;
   lastUsedAt: Date | null;
   expiresAt: Date;
   revokedAt: Date | null;
@@ -32,6 +35,7 @@ type NewDeviceTokenData = {
   name: string;
   tokenDigest: string;
   tokenPrefix: string;
+  scope: DeviceTokenScope;
   expiresAt: Date;
 };
 
@@ -58,6 +62,7 @@ type DeviceTokenPrincipal = {
   tokenId: string;
   tokenName: string;
   userId: string;
+  scope: DeviceTokenScope;
   expiresAt: Date;
 };
 
@@ -73,13 +78,14 @@ export function createDeviceTokensService(
   const digest = (token: string) =>
     createHmac("sha256", options.secret).update(token, "utf8").digest("hex");
 
-  function issueToken(userId: string, name: string, createdAt: Date) {
+  function issueToken(userId: string, name: string, scope: DeviceTokenScope, createdAt: Date) {
     const token = `${deviceTokenPrefix}${randomBytes(32).toString("base64url")}`;
     const data: NewDeviceTokenData = {
       userId,
       name: normalizeDeviceTokenName(name),
       tokenDigest: digest(token),
       tokenPrefix: token.slice(0, 12),
+      scope,
       expiresAt: getDeviceTokenExpiration(createdAt),
     };
     return { token, data };
@@ -88,7 +94,12 @@ export function createDeviceTokensService(
   return {
     async create(input: CreateDeviceTokenInput, userId: string): Promise<CreatedDeviceTokenOutput> {
       const createdAt = now();
-      const { token, data } = issueToken(userId, input.name, createdAt);
+      const { token, data } = issueToken(
+        userId,
+        input.name,
+        input.scope ?? defaultDeviceTokenScope,
+        createdAt,
+      );
       const record = await repository.insertIfBelowActiveLimit(
         data,
         createdAt,
@@ -112,7 +123,7 @@ export function createDeviceTokensService(
       );
       if (!current) throw notFound("Device token not found", "device_token_not_found");
 
-      const { token, data } = issueToken(userId, current.name, createdAt);
+      const { token, data } = issueToken(userId, current.name, current.scope, createdAt);
       const record = await repository.replaceForUser(id, data, createdAt);
       if (!record) throw notFound("Device token not found", "device_token_not_found");
       return { ...toOutput(record, createdAt, 0), token };
@@ -145,6 +156,7 @@ export function createDeviceTokensService(
         tokenId: record.id,
         tokenName: record.name,
         userId: record.userId,
+        scope: record.scope,
         expiresAt: record.expiresAt,
       };
     },
@@ -160,6 +172,7 @@ function toOutput(
     id: record.id,
     name: record.name,
     tokenPrefix: record.tokenPrefix,
+    scope: record.scope,
     lastUsedAt: record.lastUsedAt?.toISOString() ?? null,
     expiresAt: record.expiresAt.toISOString(),
     expiresSoon: isDeviceTokenExpiringSoon(record.expiresAt, now),

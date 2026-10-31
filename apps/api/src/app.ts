@@ -86,6 +86,7 @@ import { createReleasesRoute } from "./routes/releases";
 import { createSettingsRoute } from "./routes/settings";
 import { createTagsRoute } from "./routes/tags";
 import { createTransactionsRoute } from "./routes/transactions";
+import { createWidgetRoute } from "./routes/widget";
 import { createAccountsService } from "./services/accounts.service";
 import { createAttachmentsService } from "./services/attachments.service";
 import { createAuthConfigService } from "./services/auth-config.service";
@@ -124,6 +125,7 @@ import { createReleasesService } from "./services/releases.service";
 import { createSettingsService } from "./services/settings.service";
 import { createTagsService } from "./services/tags.service";
 import { createTransactionsService } from "./services/transactions.service";
+import { createWidgetService } from "./services/widget.service";
 import type { ApiVariables } from "./types/context";
 import { assertProductionSecret, getRequiredProductionEnv, parseCsvEnv } from "./utils/env";
 import { logoDevGateway } from "./utils/logo-dev";
@@ -302,14 +304,14 @@ const inboxService = createInboxService(inboxRepository, {
   rulesRepository: inboxRulesRepository,
 });
 const inboxRoute = createInboxRoute(inboxService);
-const dashboardRoute = createDashboardRoute(
-  createDashboardService(dashboardRepository, accountsService, {
-    bills: billsService,
-    budgets: budgetsService,
-    inbox: inboxService,
-    invoices: invoicesService,
-  }),
-);
+const dashboardService = createDashboardService(dashboardRepository, accountsService, {
+  bills: billsService,
+  budgets: budgetsService,
+  inbox: inboxService,
+  invoices: invoicesService,
+});
+const dashboardRoute = createDashboardRoute(dashboardService);
+const widgetRoute = createWidgetRoute(createWidgetService(dashboardService));
 const inboxRulesRoute = createInboxRulesRoute(createInboxRulesService(inboxRulesRepository));
 const companionInboxRoute = createCompanionInboxRoute(inboxService);
 const notificationsRoute = createNotificationsRoute(
@@ -327,6 +329,10 @@ const notificationsRoute = createNotificationsRoute(
   ),
 );
 const requireDeviceToken = createRequireDeviceToken(deviceTokensService);
+const requireInboxDeviceToken = createRequireDeviceToken(deviceTokensService, { scope: "inbox" });
+const requireWidgetDeviceToken = createRequireDeviceToken(deviceTokensService, {
+  scope: "widget",
+});
 
 const corsOrigins = parseCsvEnv(getRequiredProductionEnv("CORS_ORIGIN", "http://localhost:7002"));
 
@@ -563,8 +569,20 @@ app.use(
       context.json({ valid: false as const, error: "Muitas solicitações" }, 429),
   }),
 );
-app.use("/api/inbox", requireDeviceToken);
-app.use("/api/inbox/*", requireDeviceToken);
+app.use("/api/inbox", requireInboxDeviceToken);
+app.use("/api/inbox/*", requireInboxDeviceToken);
+app.use("/api/widget/*", privateCache);
+app.use("/api/widget/*", requireWidgetDeviceToken);
+app.use(
+  "/api/widget/*",
+  createMutationRateLimit({
+    windowMs: 60_000,
+    max: 30,
+    methods: new Set(["GET"]),
+    key: (context) => `widget:${context.get("deviceTokenId")}`,
+    onLimit: (context) => context.json({ error: "Muitas solicitações" }, 429),
+  }),
+);
 app.use(
   "/api/inbox",
   createMutationRateLimit({
@@ -609,6 +627,7 @@ app.use("/api/auth/*", async (context, next) => {
 
 app.route("/auth-config", createAuthConfigRoute(createAuthConfigService(authConfiguration)));
 app.route("/api/auth/device", companionDeviceRoute);
+app.route("/api/widget", widgetRoute);
 app.route("/accounts", accountsRoute);
 app.route("/cards", cardsRoute);
 app.route("/budgets", budgetsRoute);

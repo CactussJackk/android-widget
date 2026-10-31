@@ -34,12 +34,15 @@ export function createMutationRateLimit(options: {
   max: number;
   key: (context: Context<{ Variables: ApiVariables }>) => string | null;
   maxEntries?: number;
+  /** Methods counted by the limiter; defaults to mutations only. */
+  methods?: ReadonlySet<string>;
   onLimit?: (context: Context<{ Variables: ApiVariables }>, retryAfter: number) => Response;
 }) {
   const entries = new Map<string, RateLimitEntry>();
+  const methods = options.methods ?? MUTATION_METHODS;
 
   return createMiddleware<{ Variables: ApiVariables }>(async (context, next) => {
-    if (!MUTATION_METHODS.has(context.req.method)) {
+    if (!methods.has(context.req.method)) {
       await next();
       return;
     }

@@ -1,3 +1,4 @@
+import type { DeviceTokenScope } from "@openmonetis/domain/device-tokens";
 import type {
   DueDateAdjustmentDetails,
   DueDateRuleVersion,
@@ -1027,6 +1028,7 @@ export const deviceTokens = pgTable(
     name: varchar("name", { length: 80 }).notNull(),
     tokenDigest: varchar("token_digest", { length: 64 }).notNull(),
     tokenPrefix: varchar("token_prefix", { length: 12 }).notNull(),
+    scope: varchar("scope", { length: 16 }).$type<DeviceTokenScope>().notNull().default("inbox"),
     lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
@@ -1041,6 +1043,7 @@ export const deviceTokens = pgTable(
     index("device_tokens_user_id_created_at_idx").on(table.userId, table.createdAt),
     check("device_tokens_name_not_blank_check", sql`btrim(${table.name}) <> ''`),
     check("device_tokens_expiration_check", sql`${table.expiresAt} > ${table.createdAt}`),
+    check("device_tokens_scope_check", sql`${table.scope} in ('inbox', 'widget')`),
   ],
 );
 

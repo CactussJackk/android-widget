@@ -26,3 +26,16 @@ export function getDeviceTokenActivityStart(now = new Date()) {
 export function hasDeviceTokenFormat(value: string) {
   return new RegExp(`^${deviceTokenPrefix}[A-Za-z0-9_-]{43}$`).test(value);
 }
+
+/**
+ * What a device token may access. `inbox` tokens belong to the Companion and only ingest
+ * notifications; `widget` tokens are read-only and only fetch the home-screen summary.
+ * Tokens created before scopes existed are `inbox`, preserving the Companion contract.
+ */
+export const deviceTokenScopes = ["inbox", "widget"] as const;
+export type DeviceTokenScope = (typeof deviceTokenScopes)[number];
+export const defaultDeviceTokenScope: DeviceTokenScope = "inbox";
+
+export function deviceTokenHasScope(scope: DeviceTokenScope, required: DeviceTokenScope) {
+  return scope === required;
+}
