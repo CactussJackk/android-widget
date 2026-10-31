@@ -78,6 +78,7 @@ export function IntegrationsSettings() {
           </Button>
         </div>
       </SettingsSection>
+      <DeviceTokenSettings scope="widget" />
     </SettingsPanel>
   );
 }

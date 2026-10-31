@@ -17,8 +17,21 @@ Companion continua funcionando sem alterações. Um token usado fora do seu esco
 { "valid": false, "error": "Token sem permissão para este recurso" }
 ```
 
-Para criar um token de widget, a sessão web envia `POST /device-tokens` com
-`{ "name": "Widget", "scope": "widget" }`. Rotacionar o token preserva o escopo.
+Para criar um token de widget, use **Ajustes → Integrações → Widgets da tela inicial**. Pela API,
+a sessão web envia `POST /device-tokens` com `{ "name": "Widget", "scope": "widget" }`. Rotacionar
+o token preserva o escopo.
+
+### Pareamento por QR Code
+
+O QR Code do widget usa o payload versionado:
+
+```text
+openmonetis://widget/token?v=1&token=opm_<credencial>&url=<origem-pública-codificada>
+```
+
+`url` é a origem pela qual o site foi aberto ao gerar o código (por exemplo,
+`https://maquinamortifera.tail5a45b8.ts.net:7443`), para que uma única leitura configure o endereço
+e o token. Como no Companion, o payload é uma credencial secreta e não deve ser registrado em logs.
 
 ## `GET /api/widget/summary`
 

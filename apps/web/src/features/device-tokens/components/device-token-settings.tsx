@@ -1,3 +1,4 @@
+import type { DeviceTokenScope } from "@openmonetis/domain/device-tokens";
 import {
   CreateDeviceTokenInputSchema,
   type CreatedDeviceTokenOutput,
@@ -7,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   CircleCheck,
   Clipboard,
+  LayoutGrid,
   LoaderCircle,
   Plus,
   RefreshCw,
@@ -43,6 +45,7 @@ import {
   useRotateDeviceTokenMutation,
 } from "../device-tokens.mutations";
 import {
+  deviceTokenScopeCopy,
   formatDeviceTokenDate,
   formatDeviceTokenLastUsed,
   formatDeviceTokenRecentCaptures,
@@ -52,7 +55,13 @@ import { DeviceTokenQrCode } from "./device-token-qr-code";
 
 const connectionCheckIntervalMs = 3_000;
 
-export function DeviceTokenSettings() {
+interface DeviceTokenSettingsProps {
+  scope?: DeviceTokenScope;
+}
+
+export function DeviceTokenSettings({ scope = "inbox" }: DeviceTokenSettingsProps) {
+  const copy = deviceTokenScopeCopy[scope];
+  const ScopeIcon = scope === "widget" ? LayoutGrid : Smartphone;
   const [createOpen, setCreateOpen] = useState(false);
   const [createdToken, setCreatedToken] = useState<CreatedDeviceTokenOutput | null>(null);
   const query = useQuery({
@@ -63,6 +72,7 @@ export function DeviceTokenSettings() {
         ? connectionCheckIntervalMs
         : false,
   });
+  const tokens = query.data?.filter((token) => token.scope === scope);
   const createMutation = useCreateDeviceTokenMutation();
   const revokeMutation = useRevokeDeviceTokenMutation();
   const rotateMutation = useRotateDeviceTokenMutation();
@@ -83,7 +93,9 @@ export function DeviceTokenSettings() {
     },
     onSubmit: async ({ value }) => {
       try {
-        const created = await createMutation.mutateAsync(CreateDeviceTokenInputSchema.parse(value));
+        const created = await createMutation.mutateAsync(
+          CreateDeviceTokenInputSchema.parse({ ...value, scope }),
+        );
         setCreatedToken(created);
         form.reset();
         toast.success("Token criado");
@@ -134,19 +146,19 @@ export function DeviceTokenSettings() {
   return (
     <SettingsSection
       contentClassName="grid gap-5"
-      description="Autorize cada Android que pode enviar capturas para sua conta."
-      icon={Smartphone}
-      title="Aparelhos do Companion"
+      description={copy.description}
+      icon={ScopeIcon}
+      title={copy.title}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="font-medium text-sm">Aparelhos autorizados</p>
+          <p className="font-medium text-sm">{copy.listTitle}</p>
           <p className="mt-1 max-w-xl text-muted-foreground text-sm leading-relaxed">
-            Gerencie os aparelhos conectados e remova os acessos que não utiliza mais.
+            {copy.listDescription}
           </p>
         </div>
         <Button className="w-full sm:w-auto" onClick={() => setCreateOpen(true)} type="button">
-          <Plus aria-hidden="true" /> Conectar aparelho
+          <Plus aria-hidden="true" /> {copy.connectLabel}
         </Button>
       </div>
 
@@ -163,13 +175,13 @@ export function DeviceTokenSettings() {
           onRetry={() => void query.refetch()}
         />
       ) : null}
-      {query.data && !query.isError ? (
-        query.data.length ? (
+      {tokens && !query.isError ? (
+        tokens.length ? (
           <ul className="divide-y divide-border rounded-lg border border-border">
-            {query.data.map((token) => (
+            {tokens.map((token) => (
               <li className="flex items-center gap-2 p-4 sm:gap-3" key={token.id}>
                 <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted text-foreground">
-                  <Smartphone aria-hidden="true" className="size-4" />
+                  <ScopeIcon aria-hidden="true" className="size-4" />
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex min-w-0 items-center gap-2">
@@ -184,7 +196,9 @@ export function DeviceTokenSettings() {
                   </div>
                   <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-muted-foreground text-xs">
                     <span>{formatDeviceTokenLastUsed(token.lastUsedAt)}</span>
-                    <span>{formatDeviceTokenRecentCaptures(token.recentCaptureCount)}</span>
+                    {scope === "inbox" ? (
+                      <span>{formatDeviceTokenRecentCaptures(token.recentCaptureCount)}</span>
+                    ) : null}
                     <span>Expira em {formatDeviceTokenDate(token.expiresAt)}</span>
                   </div>
                 </div>
@@ -217,8 +231,8 @@ export function DeviceTokenSettings() {
           </ul>
         ) : (
           <div className="flex items-center gap-3 rounded-lg border border-dashed border-border p-5 text-muted-foreground">
-            <Smartphone aria-hidden="true" className="size-5 shrink-0" />
-            <p className="text-sm">Você ainda não conectou um aparelho ao Companion.</p>
+            <ScopeIcon aria-hidden="true" className="size-5 shrink-0" />
+            <p className="text-sm">{copy.emptyMessage}</p>
           </div>
         )
       ) : null}
@@ -227,7 +241,7 @@ export function DeviceTokenSettings() {
         <DialogContent guarded className="max-h-[calc(100svh-2rem)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {createdToken ? "Conclua a conexão no Android" : "Conectar aparelho"}
+              {createdToken ? "Conclua a conexão no Android" : copy.connectLabel}
             </DialogTitle>
             <DialogDescription>
               {createdToken
@@ -255,12 +269,12 @@ export function DeviceTokenSettings() {
                   ) : (
                     <>
                       <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-                      Aguardando conexão no Companion
+                      {copy.waitingMessage}
                     </>
                   )}
                 </p>
               </div>
-              <DeviceTokenQrCode token={createdToken.token} />
+              <DeviceTokenQrCode scope={scope} token={createdToken.token} />
               <div className="rounded-lg border bg-muted/40 p-3">
                 <code className="block break-all font-mono text-xs select-all">
                   {createdToken.token}
@@ -269,9 +283,7 @@ export function DeviceTokenSettings() {
               <Button onClick={() => void copyToken(createdToken.token)} type="button">
                 <Clipboard aria-hidden="true" /> Copiar token
               </Button>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                No Companion, configure o endereço HTTPS da API antes de escanear.
-              </p>
+              <p className="text-muted-foreground text-sm leading-relaxed">{copy.setupHint}</p>
               <DialogFooter>
                 <Button
                   type="button"
@@ -302,7 +314,9 @@ export function DeviceTokenSettings() {
               <form.Field name="name">
                 {(field) => (
                   <div className="grid gap-2">
-                    <Label htmlFor={nameId}>Nome do aparelho</Label>
+                    <Label htmlFor={nameId}>
+                      {scope === "widget" ? "Nome do widget" : "Nome do aparelho"}
+                    </Label>
                     <Input
                       aria-invalid={field.state.meta.errors.length > 0}
                       aria-describedby={
@@ -314,7 +328,7 @@ export function DeviceTokenSettings() {
                       maxLength={80}
                       onBlur={field.handleBlur}
                       onChange={(event) => field.handleChange(event.target.value)}
-                      placeholder="Ex.: Celular pessoal"
+                      placeholder={copy.namePlaceholder}
                       value={field.state.value}
                     />
                     {field.state.meta.errors.length ? (
@@ -388,8 +402,7 @@ export function DeviceTokenSettings() {
           <AlertDialogHeader>
             <AlertDialogTitle>Revogar este acesso?</AlertDialogTitle>
             <AlertDialogDescription>
-              O aparelho {query.data?.find((token) => token.id === revokeId)?.name} deixará de
-              enviar notificações imediatamente. Capturas já recebidas serão mantidas.
+              {query.data?.find((token) => token.id === revokeId)?.name} {copy.revokeDescription}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
