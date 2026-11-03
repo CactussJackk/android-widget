@@ -57,10 +57,11 @@ object WidgetRenderer {
         val connection = settings.connection
         val summary = settings.summary
 
-        val title = summary?.let { "Gasto em ${Formatters.monthName(it.period)}" } ?: "Gasto no mês"
+        // The month's result (income minus expenses) is the headline; expenses sit beside the balance.
+        val title = summary?.let { "Resultado de ${Formatters.monthName(it.period)}" } ?: "Resultado do mês"
         views.setTextViewText(R.id.widget_title, title)
-        views.setTextViewText(R.id.widget_expenses, summary?.let { Formatters.money(it.expenses) } ?: "R$ —")
-        setAmount(context, views, R.id.widget_balance, summary?.balance)
+        setAmount(context, views, R.id.widget_headline, summary?.balance, placeholder = "R$ —")
+        views.setTextViewText(R.id.widget_expenses, summary?.let { Formatters.money(it.expenses) } ?: "—")
         setAmount(context, views, R.id.widget_accounts, summary?.accountsBalance)
         views.setTextViewText(R.id.widget_status, statusOverride ?: status(settings, connection, summary))
         renderCards(context, views, size, connection, summary)
@@ -122,8 +123,14 @@ object WidgetRenderer {
         }
     }
 
-    private fun setAmount(context: Context, views: RemoteViews, viewId: Int, value: Double?) {
-        views.setTextViewText(viewId, value?.let { Formatters.money(it) } ?: "—")
+    private fun setAmount(
+        context: Context,
+        views: RemoteViews,
+        viewId: Int,
+        value: Double?,
+        placeholder: String = "—",
+    ) {
+        views.setTextViewText(viewId, value?.let { Formatters.money(it) } ?: placeholder)
         val color = if (value != null && value < 0) R.color.widget_negative else R.color.widget_text_primary
         views.setTextColor(viewId, context.getColor(color))
     }

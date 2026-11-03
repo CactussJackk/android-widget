@@ -14,7 +14,7 @@
     <string name="setup_open">Abrir OpenMonetis</string>
     <string name="setup_disconnect">Desconectar</string>
     <string name="setup_help">No OpenMonetis, abra Ajustes → Integrações → Widgets da tela inicial e toque em Conectar widget. Depois de conectar aqui, toque e segure um espaço vazio da tela inicial, escolha Widgets e arraste o OpenMonetis Widget. O Tailscale precisa estar ligado para o widget atualizar.</string>
-    <string name="widget_label_balance">Resultado do mês</string>
+    <string name="widget_label_expenses">Gasto no mês</string>
     <string name="widget_cards_empty">Nenhuma fatura de cartão neste mês</string>
     <string name="widget_label_accounts">Saldo nas contas</string>
     <string name="widget_refresh">Atualizar</string>
